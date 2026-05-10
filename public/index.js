@@ -9,6 +9,8 @@ const homeScreen = document.getElementById("home-screen");
 const goBtn = document.getElementById("go-btn");
 const backBtn = document.getElementById("nav-back");
 const homeBtn = document.getElementById("nav-home");
+const loadingTitle = document.getElementById("loading-title");
+const loadingSub = document.getElementById("loading-sub");
 
 const { ScramjetController } = $scramjetLoadController();
 
@@ -24,10 +26,26 @@ scramjet.init();
 
 const connection = new BareMux.BareMuxConnection("/baremux/worker.js");
 let browserFrame = null;
+let loadingMinTimer = null;
 
 function setError(message, code) {
 	error.textContent = message || "";
 	errorCode.textContent = code || "";
+}
+
+function setLoading(isLoading, title, sub) {
+	clearTimeout(loadingMinTimer);
+	document.body.classList.toggle("loading", isLoading);
+	if (title) loadingTitle.textContent = title;
+	if (sub) loadingSub.textContent = sub;
+}
+
+function finishLoadingSoon() {
+	clearTimeout(loadingMinTimer);
+	loadingMinTimer = setTimeout(() => {
+		document.body.classList.remove("loading");
+		if (browserFrame?.frame) browserFrame.frame.classList.add("ready");
+	}, 420);
 }
 
 async function prepareProxy() {
@@ -56,6 +74,7 @@ async function openQuery(input) {
 	if (!value) return;
 
 	setError("", "");
+	setLoading(true, "Opening page", value);
 	goBtn.disabled = true;
 	goBtn.textContent = "Opening";
 	address.value = value;
@@ -67,13 +86,16 @@ async function openQuery(input) {
 		if (!browserFrame) {
 			browserFrame = scramjet.createFrame();
 			browserFrame.frame.id = "sj-frame";
+			browserFrame.frame.addEventListener("load", finishLoadingSoon);
 			document.body.appendChild(browserFrame.frame);
 		}
 
+		browserFrame.frame.classList.remove("ready");
 		homeScreen.classList.add("hidden");
 		browserFrame.go(url);
 	} catch (err) {
 		setError("Could not open that page.", err.toString());
+		document.body.classList.remove("loading");
 	} finally {
 		goBtn.disabled = false;
 		goBtn.textContent = "Go";
@@ -100,7 +122,12 @@ homeBtn.addEventListener("click", () => {
 	browserFrame = null;
 	address.value = "";
 	setError("", "");
+	document.body.classList.remove("loading");
 	homeScreen.classList.remove("hidden");
+});
+
+document.querySelectorAll("img").forEach((img) => {
+	img.addEventListener("error", () => img.classList.add("broken"));
 });
 
 window.addEventListener("message", (event) => {

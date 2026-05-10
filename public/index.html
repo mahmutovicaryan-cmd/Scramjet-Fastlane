@@ -20,10 +20,11 @@
 	</head>
 
 	<body>
+		<div class="app-bg" aria-hidden="true"></div>
 		<header class="browser-top">
 			<div class="traffic" aria-hidden="true"><span></span><span></span><span></span></div>
-			<button id="nav-back" class="nav-btn" type="button" title="Back">‹</button>
-			<button id="nav-home" class="nav-btn" type="button" title="Home">⌂</button>
+			<button id="nav-back" class="nav-btn icon" type="button" title="Back">&lsaquo;</button>
+			<button id="nav-home" class="nav-btn" type="button" title="Home">Home</button>
 			<form id="sj-form" class="address-form">
 				<input
 					id="sj-search-engine"
@@ -37,7 +38,9 @@
 
 		<main id="home-screen" class="home-screen">
 			<div class="home-card">
-				<img src="https://i.postimg.cc/Rqzx7WDd/Fastlane-7-removebg-preview.png" alt="" />
+				<div class="logo-mark">
+					<img src="https://i.postimg.cc/Rqzx7WDd/Fastlane-7-removebg-preview.png" alt="" />
+				</div>
 				<h1>Fastlane Browser</h1>
 				<p>Search the web or open a direct URL.</p>
 				<div class="quick-row">
@@ -49,5 +52,15 @@
 				<pre id="sj-error-code"></pre>
 			</div>
 		</main>
+
+		<div id="loading-layer" class="loading-layer" aria-live="polite">
+			<div class="loading-card">
+				<div class="loader"></div>
+				<div>
+					<div id="loading-title" class="loading-title">Opening page</div>
+					<div id="loading-sub" class="loading-sub">Preparing Fastlane Browser</div>
+				</div>
+			</div>
+		</div>
 	</body>
 </html>
