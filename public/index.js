@@ -1,24 +1,14 @@
 "use strict";
-/**
- * @type {HTMLFormElement}
- */
+
 const form = document.getElementById("sj-form");
-/**
- * @type {HTMLInputElement}
- */
 const address = document.getElementById("sj-address");
-/**
- * @type {HTMLInputElement}
- */
 const searchEngine = document.getElementById("sj-search-engine");
-/**
- * @type {HTMLParagraphElement}
- */
 const error = document.getElementById("sj-error");
-/**
- * @type {HTMLPreElement}
- */
 const errorCode = document.getElementById("sj-error-code");
+const homeScreen = document.getElementById("home-screen");
+const goBtn = document.getElementById("go-btn");
+const backBtn = document.getElementById("nav-back");
+const homeBtn = document.getElementById("nav-home");
 
 const { ScramjetController } = $scramjetLoadController();
 
@@ -33,32 +23,92 @@ const scramjet = new ScramjetController({
 scramjet.init();
 
 const connection = new BareMux.BareMuxConnection("/baremux/worker.js");
+let browserFrame = null;
 
-form.addEventListener("submit", async (event) => {
-	event.preventDefault();
+function setError(message, code) {
+	error.textContent = message || "";
+	errorCode.textContent = code || "";
+}
 
+async function prepareProxy() {
 	try {
 		await registerSW();
 	} catch (err) {
-		error.textContent = "Failed to register service worker.";
-		errorCode.textContent = err.toString();
+		setError("Browser engine failed to start.", err.toString());
 		throw err;
 	}
 
-	const url = search(address.value, searchEngine.value);
-
-	let wispUrl =
+	const wispUrl =
 		(location.protocol === "https:" ? "wss" : "ws") +
 		"://" +
 		location.host +
 		"/wisp/";
+
 	if ((await connection.getTransport()) !== "/libcurl/index.mjs") {
 		await connection.setTransport("/libcurl/index.mjs", [
 			{ websocket: wispUrl },
 		]);
 	}
-	const frame = scramjet.createFrame();
-	frame.frame.id = "sj-frame";
-	document.body.appendChild(frame.frame);
-	frame.go(url);
+}
+
+async function openQuery(input) {
+	const value = String(input || "").trim();
+	if (!value) return;
+
+	setError("", "");
+	goBtn.disabled = true;
+	goBtn.textContent = "Opening";
+	address.value = value;
+
+	try {
+		await prepareProxy();
+		const url = search(value, searchEngine.value);
+
+		if (!browserFrame) {
+			browserFrame = scramjet.createFrame();
+			browserFrame.frame.id = "sj-frame";
+			document.body.appendChild(browserFrame.frame);
+		}
+
+		homeScreen.classList.add("hidden");
+		browserFrame.go(url);
+	} catch (err) {
+		setError("Could not open that page.", err.toString());
+	} finally {
+		goBtn.disabled = false;
+		goBtn.textContent = "Go";
+	}
+}
+
+form.addEventListener("submit", (event) => {
+	event.preventDefault();
+	openQuery(address.value);
+});
+
+document.querySelectorAll("[data-query]").forEach((button) => {
+	button.addEventListener("click", () => openQuery(button.dataset.query));
+});
+
+backBtn.addEventListener("click", () => {
+	try {
+		if (browserFrame?.frame?.contentWindow) browserFrame.frame.contentWindow.history.back();
+	} catch (_err) {}
+});
+
+homeBtn.addEventListener("click", () => {
+	if (browserFrame?.frame) browserFrame.frame.remove();
+	browserFrame = null;
+	address.value = "";
+	setError("", "");
+	homeScreen.classList.remove("hidden");
+});
+
+window.addEventListener("message", (event) => {
+	const data = event.data || {};
+	if (data.type === "flos-browser-search") openQuery(data.query);
+	if (data.type === "flos-browser-back") {
+		try {
+			if (browserFrame?.frame?.contentWindow) browserFrame.frame.contentWindow.history.back();
+		} catch (_err) {}
+	}
 });

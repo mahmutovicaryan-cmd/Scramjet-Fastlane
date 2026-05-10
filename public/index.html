@@ -6,13 +6,13 @@
 			name="viewport"
 			content="width=device-width, initial-scale=1.0, shrink-to-fit=no"
 		/>
-		<title>Scramjet</title>
+		<title>Fastlane Browser</title>
 
 		<link rel="shortcut icon" content="favicon.webp" />
-	
+
 		<script src="/scram/scramjet.all.js"></script>
 		<script src="/baremux/index.js"></script>
-		
+
 		<link rel="stylesheet" href="index.css" />
 		<script src="register-sw.js" defer></script>
 		<script src="search.js" defer></script>
@@ -20,47 +20,34 @@
 	</head>
 
 	<body>
-		<div title="Scramjet Logo" class="flex-center logo-wrapper header-center">
-			<img class="logo" src="sj.png" alt="Scramjet" />
-			<h1>Scramjet | MW</h1>
-		</div>
-		<div class="flex-center desc left-margin">
-			<p>
-				Scramjet is an experimental interception based web proxy designed to
-				evade internet censorship, bypass arbitrary web browser restrictions and
-				innovate web proxy technologies.
-			</p>
-		</div>
+		<header class="browser-top">
+			<div class="traffic" aria-hidden="true"><span></span><span></span><span></span></div>
+			<button id="nav-back" class="nav-btn" type="button" title="Back">‹</button>
+			<button id="nav-home" class="nav-btn" type="button" title="Home">⌂</button>
+			<form id="sj-form" class="address-form">
+				<input
+					id="sj-search-engine"
+					value="https://www.bing.com/search?q=%s"
+					type="hidden"
+				/>
+				<input id="sj-address" type="text" placeholder="Search or enter a URL" autocomplete="off" spellcheck="false" />
+				<button id="go-btn" type="submit">Go</button>
+			</form>
+		</header>
 
-		<form id="sj-form" class="flex-center">
-			<input
-				id="sj-search-engine"
-				value="https://www.google.com/search?q=%s"
-				type="hidden"
-			/>
-			<input id="sj-address" type="text" placeholder="Search the web freely" />
-		</form>
-		<div class="desc left-margin">
-			<p id="sj-error"></p>
-			<pre id="sj-error-code"></pre>
-		</div>
-		<footer>
-			<div>
-				<a
-					title="The Mercury Workshop GitHub organization"
-					href="https://github.com/MercuryWorkshop"
-					>Mercury Workshop</a
-				>
-				<a
-					title="The example demo app for Scramjet"
-					href="https://github.com/MercuryWorkshop/Scramjet-Demo"
-					>GitHub</a
-				>
-				<a title="License information" href="credits.html">Credits</a>
+		<main id="home-screen" class="home-screen">
+			<div class="home-card">
+				<img src="https://i.postimg.cc/Rqzx7WDd/Fastlane-7-removebg-preview.png" alt="" />
+				<h1>Fastlane Browser</h1>
+				<p>Search the web or open a direct URL.</p>
+				<div class="quick-row">
+					<button type="button" data-query="youtube.com">YouTube</button>
+					<button type="button" data-query="google.com">Google</button>
+					<button type="button" data-query="wikipedia.org">Wikipedia</button>
+				</div>
+				<p id="sj-error"></p>
+				<pre id="sj-error-code"></pre>
 			</div>
-			<div>
-				<span>Scramjet &copy; MW 2025</span>
-			</div>
-		</footer>
+		</main>
 	</body>
 </html>
