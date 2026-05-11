@@ -12,23 +12,13 @@ const homeBtn = document.getElementById("nav-home");
 const loadingTitle = document.getElementById("loading-title");
 const loadingSub = document.getElementById("loading-sub");
 
-const { ScramjetController } = $scramjetLoadController();
-
-const scramjet = new ScramjetController({
-	files: {
-		wasm: "/scram/scramjet.wasm.wasm",
-		all: "/scram/scramjet.all.js",
-		sync: "/scram/scramjet.sync.js",
-	},
-});
-
-scramjet.init();
-
-const connection = new BareMux.BareMuxConnection("/baremux/worker.js");
+let scramjet = null;
+let connection = null;
 let browserFrame = null;
 let loadingMinTimer = null;
 let loadingStatusTimer = null;
 let navigationWatchdog = null;
+let autoOpenStarted = false;
 
 function setError(message, code) {
 	error.textContent = message || "";
@@ -68,6 +58,25 @@ function finishLoadingSoon() {
 }
 
 async function prepareProxy() {
+	if (!scramjet) {
+		if (typeof $scramjetLoadController !== "function") {
+			throw new Error("Scramjet failed to load. Refresh the browser app and try again.");
+		}
+		if (!window.BareMux?.BareMuxConnection) {
+			throw new Error("BareMux failed to load. Refresh the browser app and try again.");
+		}
+		const { ScramjetController } = $scramjetLoadController();
+		scramjet = new ScramjetController({
+			files: {
+				wasm: "/scram/scramjet.wasm.wasm",
+				all: "/scram/scramjet.all.js",
+				sync: "/scram/scramjet.sync.js",
+			},
+		});
+		await scramjet.init();
+		connection = new BareMux.BareMuxConnection("/baremux/worker.js");
+	}
+
 	try {
 		await registerSW();
 	} catch (err) {
@@ -125,6 +134,7 @@ async function openQuery(input) {
 
 function submitSearch(event) {
 	if (event) event.preventDefault();
+	autoOpenStarted = true;
 	openQuery(address.value);
 }
 
@@ -170,4 +180,11 @@ window.addEventListener("message", (event) => {
 			if (browserFrame?.frame?.contentWindow) browserFrame.frame.contentWindow.history.back();
 		} catch (_err) {}
 	}
+});
+
+window.addEventListener("load", () => {
+	if (autoOpenStarted) return;
+	autoOpenStarted = true;
+	address.value = "google.com";
+	setTimeout(() => openQuery("google.com"), 350);
 });
