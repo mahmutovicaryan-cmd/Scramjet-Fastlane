@@ -77,15 +77,23 @@ function loadScriptOnce(src, globalTest) {
 	return promise;
 }
 
+function getBareMuxApi() {
+	if (globalThis.BareMux?.BareMuxConnection) return globalThis.BareMux;
+	if (globalThis.exports?.BareMuxConnection) return globalThis.exports;
+	if (globalThis.module?.exports?.BareMuxConnection) return globalThis.module.exports;
+	return null;
+}
+
 async function prepareProxy() {
 	if (!scramjet) {
 		await loadScriptOnce("/scram/scramjet.all.js", () => typeof globalThis.$scramjetLoadController === "function");
-		await loadScriptOnce("/baremux/index.js", () => !!globalThis.BareMux?.BareMuxConnection);
+		await loadScriptOnce("/baremux/index.js", () => !!getBareMuxApi()?.BareMuxConnection);
 
 		if (typeof globalThis.$scramjetLoadController !== "function") {
 			throw new Error("Scramjet failed to load. Refresh the browser app and try again.");
 		}
-		if (!globalThis.BareMux?.BareMuxConnection) {
+		const bareMux = getBareMuxApi();
+		if (!bareMux?.BareMuxConnection) {
 			throw new Error("BareMux failed to load. Refresh the browser app and try again.");
 		}
 		const { ScramjetController } = globalThis.$scramjetLoadController();
@@ -97,7 +105,7 @@ async function prepareProxy() {
 			},
 		});
 		await scramjet.init();
-		connection = new globalThis.BareMux.BareMuxConnection("/baremux/worker.js");
+		connection = new bareMux.BareMuxConnection("/baremux/worker.js");
 	}
 
 	try {
