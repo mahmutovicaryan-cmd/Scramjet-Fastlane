@@ -19,6 +19,7 @@ let loadingMinTimer = null;
 let loadingStatusTimer = null;
 let navigationWatchdog = null;
 let autoOpenStarted = false;
+const loadedScripts = new Map();
 
 function setError(message, code) {
 	error.textContent = message || "";
@@ -57,15 +58,37 @@ function finishLoadingSoon() {
 	}, 420);
 }
 
+function loadScriptOnce(src, globalTest) {
+	if (globalTest()) return Promise.resolve();
+	if (loadedScripts.has(src)) return loadedScripts.get(src);
+
+	const promise = new Promise((resolve, reject) => {
+		document.querySelectorAll(`script[src="${src}"]`).forEach(script => script.remove());
+
+		const script = document.createElement("script");
+		script.src = src;
+		script.async = false;
+		script.onload = () => (globalTest() ? resolve() : reject(new Error(`${src} did not initialize`)));
+		script.onerror = () => reject(new Error(`Could not load ${src}`));
+		document.head.appendChild(script);
+	});
+
+	loadedScripts.set(src, promise);
+	return promise;
+}
+
 async function prepareProxy() {
 	if (!scramjet) {
-		if (typeof $scramjetLoadController !== "function") {
+		await loadScriptOnce("/scram/scramjet.all.js", () => typeof globalThis.$scramjetLoadController === "function");
+		await loadScriptOnce("/baremux/index.js", () => !!globalThis.BareMux?.BareMuxConnection);
+
+		if (typeof globalThis.$scramjetLoadController !== "function") {
 			throw new Error("Scramjet failed to load. Refresh the browser app and try again.");
 		}
-		if (!window.BareMux?.BareMuxConnection) {
+		if (!globalThis.BareMux?.BareMuxConnection) {
 			throw new Error("BareMux failed to load. Refresh the browser app and try again.");
 		}
-		const { ScramjetController } = $scramjetLoadController();
+		const { ScramjetController } = globalThis.$scramjetLoadController();
 		scramjet = new ScramjetController({
 			files: {
 				wasm: "/scram/scramjet.wasm.wasm",
@@ -74,7 +97,7 @@ async function prepareProxy() {
 			},
 		});
 		await scramjet.init();
-		connection = new BareMux.BareMuxConnection("/baremux/worker.js");
+		connection = new globalThis.BareMux.BareMuxConnection("/baremux/worker.js");
 	}
 
 	try {
