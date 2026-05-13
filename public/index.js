@@ -84,6 +84,33 @@ function getBareMuxApi() {
 	return null;
 }
 
+function withTimeout(task, ms, message) {
+	let timer = null;
+	const timeout = new Promise((_, reject) => {
+		timer = setTimeout(() => reject(new Error(message)), ms);
+	});
+
+	return Promise.race([task, timeout]).finally(() => clearTimeout(timer));
+}
+
+function resolveTargetUrl(input, template) {
+	const value = String(input || "").trim();
+
+	try {
+		return new URL(value).toString();
+	} catch (_err) {}
+
+	try {
+		const url = new URL(`https://${value}`);
+		if (url.hostname.includes(".")) return url.toString();
+	} catch (_err) {}
+
+	return String(template || "https://www.google.com/search?q=%s").replace(
+		"%s",
+		encodeURIComponent(value),
+	);
+}
+
 async function prepareProxy() {
 	if (!scramjet) {
 		await loadScriptOnce("/scram/scramjet.all.js", () => typeof globalThis.$scramjetLoadController === "function");
@@ -104,12 +131,12 @@ async function prepareProxy() {
 				sync: "/scram/scramjet.sync.js",
 			},
 		});
-		await scramjet.init();
+		await withTimeout(scramjet.init(), 12000, "Scramjet startup timed out. Refresh and try again.");
 		connection = new bareMux.BareMuxConnection("/baremux/worker.js");
 	}
 
 	try {
-		await registerSW();
+		await withTimeout(registerSW(), 12000, "Browser service worker timed out. Refresh and try again.");
 	} catch (err) {
 		setError("Browser engine failed to start.", err.toString());
 		throw err;
@@ -121,10 +148,14 @@ async function prepareProxy() {
 		location.host +
 		"/wisp/";
 
-	if ((await connection.getTransport()) !== "/libcurl/index.mjs") {
-		await connection.setTransport("/libcurl/index.mjs", [
-			{ websocket: wispUrl },
-		]);
+	if ((await withTimeout(connection.getTransport(), 10000, "BareMux transport check timed out.")) !== "/libcurl/index.mjs") {
+		await withTimeout(
+			connection.setTransport("/libcurl/index.mjs", [
+				{ websocket: wispUrl },
+			]),
+			15000,
+			"BareMux transport setup timed out.",
+		);
 	}
 }
 
@@ -132,7 +163,7 @@ async function openQuery(input) {
 	const value = String(input || "").trim();
 	if (!value) return;
 
-	const url = search(value, searchEngine.value);
+	const url = resolveTargetUrl(value, searchEngine.value);
 	setError("", "");
 	setLoading(true, "Opening page", url);
 	goBtn.disabled = true;

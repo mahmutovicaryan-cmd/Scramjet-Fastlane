@@ -12,8 +12,7 @@
 
 		<link rel="stylesheet" href="index.css" />
 		<script src="register-sw.js" defer></script>
-		<script src="search.js" defer></script>
-		<script src="index.js?v=proxy-loader-2" defer></script>
+		<script src="index.js?v=browser-stable-1" defer></script>
 	</head>
 
 	<body>
@@ -25,11 +24,11 @@
 			<form id="sj-form" class="address-form">
 				<input
 					id="sj-search-engine"
-					value="https://duckduckgo.com/html/?q=%s"
+					value="https://www.google.com/search?q=%s"
 					type="hidden"
 				/>
 				<input id="sj-address" type="text" placeholder="Search or enter a URL" autocomplete="off" spellcheck="false" />
-				<button id="go-btn" type="button">Go</button>
+				<button id="go-btn" type="submit">Go</button>
 			</form>
 		</header>
 
