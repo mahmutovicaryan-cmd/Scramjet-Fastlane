@@ -19,7 +19,6 @@ let loadingMinTimer = null;
 let loadingStatusTimer = null;
 let navigationWatchdog = null;
 let autoOpenStarted = false;
-let bareMuxModulePromise = null;
 const loadedScripts = new Map();
 
 function setError(message, code) {
@@ -72,6 +71,9 @@ function loadScriptOnce(src, globalTest) {
 		script.onload = () => (globalTest() ? resolve() : reject(new Error(`${src} did not initialize`)));
 		script.onerror = () => reject(new Error(`Could not load ${src}`));
 		document.head.appendChild(script);
+	}).catch((err) => {
+		loadedScripts.delete(src);
+		throw err;
 	});
 
 	loadedScripts.set(src, promise);
@@ -88,18 +90,14 @@ function getBareMuxApi() {
 function loadBareMux() {
 	const globalApi = getBareMuxApi();
 	if (globalApi?.BareMuxConnection) return Promise.resolve(globalApi);
-	if (bareMuxModulePromise) return bareMuxModulePromise;
 
-	bareMuxModulePromise = import("/baremux/index.js").then((moduleApi) => {
-		if (moduleApi?.BareMuxConnection) return moduleApi;
+	return loadScriptOnce("/baremux/index.js?v=2.1.9", () => !!getBareMuxApi()?.BareMuxConnection)
+		.then(() => {
+			const fallbackApi = getBareMuxApi();
+			if (fallbackApi?.BareMuxConnection) return fallbackApi;
 
-		const fallbackApi = getBareMuxApi();
-		if (fallbackApi?.BareMuxConnection) return fallbackApi;
-
-		throw new Error("BareMux did not expose BareMuxConnection.");
-	});
-
-	return bareMuxModulePromise;
+			throw new Error("BareMux did not expose BareMuxConnection.");
+		});
 }
 
 function withTimeout(task, ms, message) {
