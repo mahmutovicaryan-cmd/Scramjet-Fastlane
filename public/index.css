@@ -339,6 +339,90 @@ body.loading .loading-layer {
 	white-space: pre-wrap;
 }
 
+#debug-toggle {
+	position: fixed;
+	left: 10px;
+	bottom: 10px;
+	z-index: 40;
+	width: 22px;
+	height: 22px;
+	border: 1px solid var(--line);
+	border-radius: 50%;
+	background: rgba(23, 26, 33, 0.58);
+	color: var(--muted);
+	font-size: 11px;
+	font-weight: 600;
+	opacity: 0.24;
+	cursor: pointer;
+	transition: opacity 0.14s ease, background 0.14s ease;
+}
+
+#debug-toggle:hover {
+	opacity: 1;
+	background: var(--panel-2);
+}
+
+#debug-panel {
+	position: fixed;
+	left: 12px;
+	right: 12px;
+	bottom: 12px;
+	z-index: 45;
+	display: none;
+	max-height: min(360px, calc(100vh - 94px));
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	background: rgba(15, 17, 21, 0.96);
+	box-shadow: var(--shadow);
+	overflow: hidden;
+	backdrop-filter: blur(12px);
+}
+
+#debug-panel.show {
+	display: block;
+}
+
+.debug-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 10px 12px;
+	border-bottom: 1px solid var(--line);
+	color: var(--text);
+}
+
+.debug-head strong {
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.debug-head div {
+	display: flex;
+	gap: 6px;
+}
+
+.debug-head button {
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	background: var(--panel-2);
+	color: var(--text);
+	font-size: 12px;
+	font-weight: 500;
+	padding: 6px 9px;
+	cursor: pointer;
+}
+
+#debug-log {
+	margin: 0;
+	max-height: 300px;
+	overflow: auto;
+	padding: 11px 12px;
+	color: #b8c0cc;
+	font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	white-space: pre-wrap;
+}
+
 @media (max-width: 620px) {
 	.browser-top {
 		inset: 8px 8px auto;
