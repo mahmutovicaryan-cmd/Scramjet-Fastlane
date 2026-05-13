@@ -19,6 +19,7 @@ let loadingMinTimer = null;
 let loadingStatusTimer = null;
 let navigationWatchdog = null;
 let autoOpenStarted = false;
+let bareMuxModulePromise = null;
 const loadedScripts = new Map();
 
 function setError(message, code) {
@@ -84,6 +85,23 @@ function getBareMuxApi() {
 	return null;
 }
 
+function loadBareMux() {
+	const globalApi = getBareMuxApi();
+	if (globalApi?.BareMuxConnection) return Promise.resolve(globalApi);
+	if (bareMuxModulePromise) return bareMuxModulePromise;
+
+	bareMuxModulePromise = import("/baremux/index.js").then((moduleApi) => {
+		if (moduleApi?.BareMuxConnection) return moduleApi;
+
+		const fallbackApi = getBareMuxApi();
+		if (fallbackApi?.BareMuxConnection) return fallbackApi;
+
+		throw new Error("BareMux did not expose BareMuxConnection.");
+	});
+
+	return bareMuxModulePromise;
+}
+
 function withTimeout(task, ms, message) {
 	let timer = null;
 	const timeout = new Promise((_, reject) => {
@@ -114,12 +132,11 @@ function resolveTargetUrl(input, template) {
 async function prepareProxy() {
 	if (!scramjet) {
 		await loadScriptOnce("/scram/scramjet.all.js", () => typeof globalThis.$scramjetLoadController === "function");
-		await loadScriptOnce("/baremux/index.js", () => !!getBareMuxApi()?.BareMuxConnection);
+		const bareMux = await withTimeout(loadBareMux(), 10000, "BareMux startup timed out.");
 
 		if (typeof globalThis.$scramjetLoadController !== "function") {
 			throw new Error("Scramjet failed to load. Refresh the browser app and try again.");
 		}
-		const bareMux = getBareMuxApi();
 		if (!bareMux?.BareMuxConnection) {
 			throw new Error("BareMux failed to load. Refresh the browser app and try again.");
 		}
